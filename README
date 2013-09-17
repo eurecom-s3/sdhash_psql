@@ -1,0 +1,144 @@
+Author
+======
+
+Andrei Costin/EURECOM-S3
+email: andrei@andreicostin.com, andrei.costin@eurecom.fr
+twitter: @costinandrei
+
+Credits
+=======
+
+Based on https://github.com/bernerdschaefer/ssdeep_psql
+
+License
+=======
+
+GPLv3
+
+Requirements
+============
+
+Unless you use the included 'build_all.sh' script, you will need at least the 
+following prerequisites:
+    sdhash sources (tested with 3.3) from http://roussev.net/sdhash/
+        configured and compiled
+    postgresql sources (tested with 9.2.4) from ftp://ftp.postgresql.org/pub/source/v9.2.4
+        configured and compiled
+
+Other prerequisite versions:
+    gcc (Ubuntu 4.4.3-4ubuntu5.1) 4.4.3
+    g++ (Ubuntu 4.4.3-4ubuntu5.1) 4.4.3
+    lsb_release -a
+        LSB Version:	core-2.0-ia32:core-2.0-noarch:core-3.0-ia32:core-3.0-noarch:core-3.1-ia32:core-3.1-noarch:core-3.2-ia32:core-3.2-noarch:core-4.0-ia32:core-4.0-noarch
+        Distributor ID:	Ubuntu
+        Description:	Ubuntu 10.04.4 LTS
+        Release:	10.04
+        Codename:	lucid
+
+It is recommended to check 'build_all.sh' to check the prerequisites
+
+Installation
+============
+
+The recommended way to install is to run the included 'build_all.sh' script.
+This script does roughly the following:
+    downloads prerequisite packages
+    compiles and installs them in the right order (feel free to tweak the 
+        configuration here)
+    compiles the ssdeep and sdhash plugins (shared libraries) for psql
+    installs those plugins to be available for psql server
+
+Otherwise, you will want to clone this repository into the contrib folder of 
+your postgres source folder, and then you should be able to run 
+'build_sdhash_psql.sh' (currently "make" and "make install" do not work).
+
+Subsequently
+
+To expose the sdhash functions in your database, you'll need to issue the 
+following SQL statements:
+
+    CREATE OR REPLACE FUNCTION sdhash_hash(TEXT) RETURNS TEXT AS 'sdhash_psql.so', 'pg_sdhash_hash' LANGUAGE 'c';
+    CREATE OR REPLACE FUNCTION sdhash_compare(TEXT, TEXT) RETURNS INTEGER AS 'sdhash_psql.so', 'pg_sdhash_compare' LANGUAGE 'c';
+    CREATE OR REPLACE FUNCTION sdhash_hash_compare(TEXT, TEXT) RETURNS INTEGER AS 'sdhash_psql.so', 'pg_sdhash_hash_compare' LANGUAGE 'c';
+
+    NOTE
+    ----
+    Use LANGUAGE 'c' (small 'c') instead of LANGUAGE 'C' (capital 'C')
+    The list of available/correct LANGUAGE options can be verified using below query (from http://stackoverflow.com/q/12514664)
+      select * from pg_language; 
+
+Usage
+=====
+
+sdhash_psql exposes three functions for working with sdhash-based fuzzy hashes: 
+sdhash_hash, sdhash_compare, and sdhash_hash_compare:
+
+    # select sdhash_hash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+     sdhash_hash
+    ------------
+sdbf:03:16:sdbf_from_stream:1024:sha1:256:5:7ff:160:1:0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==+
+
+
+    # select sdhash_compare('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+     sdhash_compare 
+    ----------------
+                  0
+    (1 row)
+
+
+    # select sdhash_hash_compare('sdbf:03:9:ChangeLog:3996:sha1:256:5:7ff:160:1:68:MQggQQggAAKADAAACBQkAAQAAQAEgIiDEARABEEQVA4AAAICQAAAwBABCIBAAAAaAJ4AsUAkIBAgAAkwCE0DUAABAhYAEAQBJABAQQIEIIAFAAA0AkAAJMCBBYAAACMIsAAQAAIAGggAAABAQSCoAAIgAQCCEgwAOiABCAEDoYAQABAEgDQYAAgBCAgQAREEAAEAAAVAAARQkiQAAKQAKAAAxnkAIABACBCAiCIJEAMwADELYAAQAAIgAIAAQAASAwEEGQDEIAwYIUglQEBASBAABJAQpAQEAEEEAiEAYIAQAAAFBBAQAQAEAAHBgKPBgADMgIAIAgCAICAEMIAAAA==', 'sdbf:03:9:ChangeLog:3996:sha1:256:5:7ff:160:1:68:MQggQQggAAKADAAACBQkAAQAAQAEgIiDEARABEEQVA4AAAICQAAAwBABCIBAAAAaAJ4AsUAkIBAgAAkwCE0DUAABAhYAEAQBJABAQQIEIIAFAAA0AkAAJMCBBYAAACMIsAAQAAIAGggAAABAQSCoAAIgAQCCEgwAOiABCAEDoYAQABAEgDQYAAgBCAgQAREEAAEAAAVAAARQkiQAAKQAKAAAxnkAIABACBCAiCIJEAMwADELYAAQAAIgAIAAQAASAwEEGQDEIAwYIUglQEBASBAABJAQpAQEAEEEAiEAYIAQAAAFBBAQAQAEAAHBgKPBgADMgIAIAgCAICAEMIAAAA==');
+
+     sdhash_hash_compare 
+    ---------------------
+                     100
+
+
+Here's a suggested workflow for using sdhash_psql:
+
+  CREATE TABLE "stories" ("id" SERIAL, "body" TEXT, "hash" TEXT);
+
+  CREATE OR REPLACE FUNCTION set_sdhash_hash() RETURNS TRIGGER AS $$
+  BEGIN
+      NEW.hash := sdhash_hash(NEW.body);
+      RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+  CREATE TRIGGER "set_sdhash_hash_for_body_on_insert" BEFORE INSERT ON "stories"
+    FOR EACH ROW EXECUTE PROCEDURE set_sdhash_hash();
+  CREATE TRIGGER "set_sdhash_hash_for_body_on_update" BEFORE UPDATE ON "stories"
+    FOR EACH ROW EXECUTE PROCEDURE set_sdhash_hash();
+
+  INSERT INTO "stories" ("body") VALUES ('Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');
+  INSERT INTO "stories" ("body") VALUES ('Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.');
+
+  SELECT id, sdhash_compare(body, 'Lorem ipsum dolor sit amet') as score from "stories" ORDER BY sdhash_compare(body, 'Lorem ipsum dolor sit amet') DESC LIMIT 1;
+
+  -- or, much faster
+  SELECT id, sdhash_hash_compare(hash, sdhash_hash('Lorem ipsum dolor sit amet')) as score from "stories"
+  ORDER BY sdhash_hash_compare(hash, sdhash_hash('Lorem ipsum dolor sit amet')) DESC LIMIT 1;
+
+  -- and again, assuming you've calculated your search text's hash already (with, say, python or ruby wrappers for sdhash)
+  SELECT id, sdhash_hash_compare(hash, '3:f4oo8MRwRn:f4kPR') as score from "stories"
+  ORDER BY sdhash_hash_compare(hash, '3:f4oo8MRwRn:f4kPR') DESC LIMIT 1;
+
+Database testing notes
+======================
+
+    Check first README from the PostgreSQL source package.
+
+    Server
+    ------
+    sudo su - root
+    sed 's@#port=5432@port15432@g' /usr/local/pgsql/data/postgresql.conf
+    /usr/local/pgsql/bin/postgres -D /usr/local/pgsql/data
+
+    Client
+    ------
+    sudo su - postgres
+    /usr/local/pgsql/bin/createuser --interactive --port=15432 --username=fuzzy
+    /usr/local/pgsql/bin/createdb --echo --owner=fuzzy  --username=fuzzy --port=15432 fuzzy
+    /usr/local/pgsql/bin/psql --port=15432 --username=fuzzy fuzzy
+
