@@ -37,8 +37,7 @@ cd $SDHASH_DIR
 
 # TODO: auto-patch for 32bit systems
 
-#make
-echo TODO
+make
 if [ $? -ne 0 ];
 then
     echo "Error: build failed for $SDHASH_DIR"
@@ -52,8 +51,7 @@ wget $WGET_PSQL
 tar -xzvf $PSQL_DIR.tar.gz
 cd $PSQL_DIR
 
-#./configure
-echo TODO
+./configure
 if [ $? -ne 0 ];
 then
     echo "Error: configure failed for $PSQL_DIR"
@@ -72,16 +70,14 @@ fi
 #   }; /* extern "C" */
 #   #endif 
 
-#make
-echo TODO
+make
 if [ $? -ne 0 ];
 then
     echo "Error: build failed for $PSQL_DIR"
     exit 1
 fi
 
-#make check
-echo TODO
+make check
 
 ################################################################################
 
@@ -89,8 +85,7 @@ cd $DEST_DIR/$PSQL_DIR/contrib
 git clone $GIT_SSDEEP_PSQL
 cd $SSDEEP_PSQL_DIR
 
-#make
-echo TODO
+make
 if [ $? -ne 0 ];
 then
     echo "Error: build failed for $SSDEEP_PSQL_DIR"
@@ -101,16 +96,14 @@ cd $DEST_DIR/$PSQL_DIR/contrib
 git clone $GIT_SDHASH_PSQL
 cd $SDHASH_PSQL_DIR
 ln -s $DEST_DIR/$SDHASH_DIR sdhash-dist
-#./build_sdhash_psql.sh
-echo TODO
+./build_sdhash_psql.sh
 
 # TODO: auto-patch $DEST_DIR/$PSQL_DIR/contrib/Makefile to contain:
 #SUBDIRS = \
 #                ssdeep_psql     \
 #                sdhash_psql     \
 cd $DEST_DIR/$PSQL_DIR/contrib
-#make
-echo TODO
+make
 if [ $? -ne 0 ];
 then
     echo "Error: build failed for $PSQL_DIR/contrib"
@@ -119,18 +112,15 @@ fi
 
 # Test the psql core
 cd $DEST_DIR/$PSQL_DIR
-#make world
-echo TODO
+make world
 
 # Test the contrib plugins
 cd $DEST_DIR/$PSQL_DIR
-#make check-world
-echo TODO
+make check-world
 
 ################################################################################
 
-#sudo make install
-echo TODO
-#sudo make install-world
-echo TODO
+cd $DEST_DIR/$PSQL_DIR
+sudo make install
+sudo make install-world
 
