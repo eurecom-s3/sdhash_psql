@@ -35,7 +35,25 @@ wget $WGET_SDHASH
 tar -xzvf $SDHASH_DIR.tar.gz
 cd $SDHASH_DIR
 
-# TODO: auto-patch for 32bit systems
+# Patch for 32bit systems
+PLATFORM=`getconf LONG_BIT`
+
+if [ $PLATFORM -eq 32 ];
+then
+    grep "D_M_IX86" Makefile
+    if [ $? -ne 0 ];
+    then
+        cp Makefile Makefile.original
+        sed 's@CFLAGS = @CFLAGS = -D_M_IX86 @g' -i Makefile
+    fi
+
+    grep "//local_cpuid" ./sdbf/sdbf_conf.cc
+    if [ $? -ne 0 ];
+    then
+        cp ./sdbf/sdbf_conf.cc ./sdbf/sdbf_conf.cc.original
+        sed 's@local_cpuid@//local_cpuid@g' -i ./sdbf/sdbf_conf.cc
+    fi
+fi
 
 make
 if [ $? -ne 0 ];
@@ -58,7 +76,7 @@ then
     exit 1
 fi
 
-# TODO: auto-patch src/include/utils/palloc.h and src/include/fmgr.h with wrapping
+# TODO: auto-patch src/include/utils/palloc.h and src/include/fmgr.h with extern "C" wrapping
 # http://postgresql.1045698.n5.nabble.com/Mostly-Harmless-Welcoming-our-C-friends-td2011266.html
 # http://www.linuxquestions.org/questions/programming-9/how-to-make-g-behave-like-gcc-in-this-case-795524/
 #

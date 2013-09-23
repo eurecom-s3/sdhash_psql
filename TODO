@@ -4,6 +4,9 @@ TODO
 Generic:
     - proper error handling (use try{} blocks as in sdhash-src)
 
+    - in build_all.sh, auto-patch postgresql's src/include/utils/palloc.h and 
+    src/include/fmgr.h with extern "C" wrapping
+
 Suggested by lucab:
     - build script to compile/link against postgresql-dev, instead of recompiling 
     the enrire postgresql source tree (http://www.postgresql.org/download/linux/ubuntu/)
