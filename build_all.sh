@@ -26,7 +26,7 @@ SSDEEP_PSQL_DIR="ssdeep_psql"
 GIT_SSDEEP_PSQL="https://github.com/bernerdschaefer/$SSDEEP_PSQL_DIR.git"
 
 SDHASH_PSQL_DIR="sdhash_psql"
-GIT_SDHASH_PSQL="https://github.com/zveriu/$SDHASH_PSQL_DIR.git"
+GIT_SDHASH_PSQL="https://github.com/eurecom-s3/$SDHASH_PSQL_DIR.git"
 
 ################################################################################
 
