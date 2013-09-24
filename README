@@ -127,12 +127,13 @@ Here's a suggested workflow for using sdhash_psql:
 Database testing notes
 ======================
 
-    Check first README from the PostgreSQL source package.
+    See first "Short Version" chapter of "postgresql-9.2.4/INSTALL" from the 
+    PostgreSQL source package.
 
     Server
     ------
-    sudo su - root
-    sed 's@#port=5432@port15432@g' /usr/local/pgsql/data/postgresql.conf
+    sudo su - postgres
+    sed 's@#port=5432@port=15432@g' /usr/local/pgsql/data/postgresql.conf
     /usr/local/pgsql/bin/postgres -D /usr/local/pgsql/data
 
     Client

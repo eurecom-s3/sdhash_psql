@@ -76,7 +76,11 @@ then
     exit 1
 fi
 
-# TODO: auto-patch src/include/utils/palloc.h and src/include/fmgr.h with extern "C" wrapping
+# TODO: auto-patch:
+# src/include/utils/palloc.h
+# src/include/fmgr.h
+# src/include/utils/builtins.h
+# with extern "C" wrapping
 # http://postgresql.1045698.n5.nabble.com/Mostly-Harmless-Welcoming-our-C-friends-td2011266.html
 # http://www.linuxquestions.org/questions/programming-9/how-to-make-g-behave-like-gcc-in-this-case-795524/
 #
