@@ -11,7 +11,7 @@
 # License   :   GPLv3
 ################################################################################
 
-rm *.o *.so
+rm -f *.o *.so
 
 # Build the compiled object file
 stage_build=`make 2>/dev/null | sed 's@gcc@g++@g' | sed 's@sdhash_psql.o@sdhash_psql.o ./sdhash-dist/libsdbf.a @g' | sed 's@-I. @-I./sdhash-dist -I. @g'`

@@ -76,21 +76,31 @@ then
     exit 1
 fi
 
-# TODO: auto-patch:
-# src/include/utils/palloc.h
-# src/include/fmgr.h
-# src/include/utils/builtins.h
-# with extern "C" wrapping
+# Patch PostgreSQL to be able to link agains C++ object-files/libraries
 # http://postgresql.1045698.n5.nabble.com/Mostly-Harmless-Welcoming-our-C-friends-td2011266.html
 # http://www.linuxquestions.org/questions/programming-9/how-to-make-g-behave-like-gcc-in-this-case-795524/
-#
-#   #ifdef __cplusplus
-#   extern "C" {
-#   #endif 
-#
-#   #ifdef __cplusplus
-#   }; /* extern "C" */
-#   #endif 
+# HACK: though this is a dirty hack for now, let it work until the proper patch is in the PostgreSQL main branch
+
+FILE_BUILTINS_H="../../src/include/utils/builtins.h"
+if [ `grep '__cplusplus' $FILE_BUILTINS_H | wc -l` -ne 2 ];
+then
+    sed -i 's@#define BUILTINS_H@#define BUILTINS_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_BUILTINS_H
+    sed -i 's@#endif   /\* BUILTINS_H \*/@\n#ifdef __cplusplus\n}; /* extern "C" */\n#endif\n\n#endif   /* BUILTINS_H */@g' $FILE_BUILTINS_H
+fi
+
+FILE_PALLOC_H="../../src/include/utils/palloc.h"
+if [ `grep '__cplusplus' $FILE_PALLOC_H | wc -l` -ne 2 ];
+then
+    sed -i 's@#define PALLOC_H@#define PALLOC_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_PALLOC_H
+    sed -i 's@#endif   /\* PALLOC_H \*/@\n#ifdef __cplusplus\n}; /* extern "C" */\n#endif\n\n#endif   /* PALLOC_H */@g' $FILE_PALLOC_H
+fi
+
+FILE_FMGR_H="../../src/include/fmgr.h"
+if [ `grep '__cplusplus' $FILE_FMGR_H | wc -l` -ne 2 ];
+then
+    sed -i 's@#define FMGR_H@#define FMGR_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_FMGR_H
+    sed -i 's@#endif   /\* FMGR_H \*/@\n#ifdef __cplusplus\n}; /* extern "C" */\n#endif\n\n#endif   /* FMGR_H */@g' $FILE_FMGR_H
+fi
 
 make
 if [ $? -ne 0 ];
@@ -99,7 +109,9 @@ then
     exit 1
 fi
 
+# This tests the PostreSQL core
 make check
+# TODO: add error handling in case tests failed
 
 ################################################################################
 
@@ -120,11 +132,20 @@ cd $SDHASH_PSQL_DIR
 ln -s $DEST_DIR/$SDHASH_DIR sdhash-dist
 ./build_sdhash_psql.sh
 
-# TODO: auto-patch $DEST_DIR/$PSQL_DIR/contrib/Makefile to contain:
-#SUBDIRS = \
-#                ssdeep_psql     \
-#                sdhash_psql     \
+
 cd $DEST_DIR/$PSQL_DIR/contrib
+
+# Patch $DEST_DIR/$PSQL_DIR/contrib/Makefile to contain fuzzy-hashing plugins:
+# ssdeep_psql
+# sdhash_psql
+# HACK: though this is a dirty hack for now
+
+FILE_CONTRIB_MAKEFILE="Makefile"
+if [ `egrep -e "(ssdeep_psql)|(sdhash_psql)" $FILE_CONTRIB_MAKEFILE | wc -l` -ne 2 ];
+then
+    sed -i 's@SUBDIRS = \\@SUBDIRS = \\\n\t\tssdeep_psql\t\\\n\t\tsdhash_psql\t\\@g' $FILE_CONTRIB_MAKEFILE
+fi
+
 make
 if [ $? -ne 0 ];
 then
@@ -132,17 +153,22 @@ then
     exit 1
 fi
 
-# Test the psql core
+# This builds the plugins from './contrib' of PostreSQL
 cd $DEST_DIR/$PSQL_DIR
 make world
 
-# Test the contrib plugins
+# This tests the plugins from './contrib' of PostreSQL
 cd $DEST_DIR/$PSQL_DIR
 make check-world
+# TODO: add error handling in case tests failed
 
 ################################################################################
 
 cd $DEST_DIR/$PSQL_DIR
+
+# This installs the PostreSQL
 sudo make install
+
+# This installs the plugins from './contrib' of PostreSQL
 sudo make install-world
 
