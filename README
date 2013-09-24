@@ -139,7 +139,7 @@ Database testing notes
     Client
     ------
     sudo su - postgres
-    /usr/local/pgsql/bin/createuser --interactive --port=15432 --username=fuzzy
+    /usr/local/pgsql/bin/createuser --interactive --port=15432 #--username=fuzzy
     /usr/local/pgsql/bin/createdb --echo --owner=fuzzy  --username=fuzzy --port=15432 fuzzy
     /usr/local/pgsql/bin/psql --port=15432 --username=fuzzy fuzzy
 

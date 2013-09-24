@@ -55,6 +55,14 @@ then
     fi
 fi
 
+# Patch for 64bit platforms (works well on 32bit platforms as well) to properly 
+# build of static version of sdhash-supplied boost library on
+FILE_SDHASH_MAKEFILE="Makefile"
+if [ `grep "link=static" $FILE_SDHASH_MAKEFILE | grep "fPIC" | wc -l` -eq 0 ];
+then
+    sed -i 's@b2 link=static@b2 link=static cxxflags=-fPIC cflags=-fPIC@g' $FILE_SDHASH_MAKEFILE
+fi
+
 make
 if [ $? -ne 0 ];
 then
@@ -81,21 +89,21 @@ fi
 # http://www.linuxquestions.org/questions/programming-9/how-to-make-g-behave-like-gcc-in-this-case-795524/
 # HACK: though this is a dirty hack for now, let it work until the proper patch is in the PostgreSQL main branch
 
-FILE_BUILTINS_H="../../src/include/utils/builtins.h"
+FILE_BUILTINS_H="./src/include/utils/builtins.h"
 if [ `grep '__cplusplus' $FILE_BUILTINS_H | wc -l` -ne 2 ];
 then
     sed -i 's@#define BUILTINS_H@#define BUILTINS_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_BUILTINS_H
     sed -i 's@#endif   /\* BUILTINS_H \*/@\n#ifdef __cplusplus\n}; /* extern "C" */\n#endif\n\n#endif   /* BUILTINS_H */@g' $FILE_BUILTINS_H
 fi
 
-FILE_PALLOC_H="../../src/include/utils/palloc.h"
+FILE_PALLOC_H="./src/include/utils/palloc.h"
 if [ `grep '__cplusplus' $FILE_PALLOC_H | wc -l` -ne 2 ];
 then
     sed -i 's@#define PALLOC_H@#define PALLOC_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_PALLOC_H
     sed -i 's@#endif   /\* PALLOC_H \*/@\n#ifdef __cplusplus\n}; /* extern "C" */\n#endif\n\n#endif   /* PALLOC_H */@g' $FILE_PALLOC_H
 fi
 
-FILE_FMGR_H="../../src/include/fmgr.h"
+FILE_FMGR_H="./src/include/fmgr.h"
 if [ `grep '__cplusplus' $FILE_FMGR_H | wc -l` -ne 2 ];
 then
     sed -i 's@#define FMGR_H@#define FMGR_H\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n@g' $FILE_FMGR_H
