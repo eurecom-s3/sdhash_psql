@@ -30,48 +30,7 @@ GIT_SDHASH_PSQL="https://github.com/eurecom-s3/$SDHASH_PSQL_DIR.git"
 
 ################################################################################
 
-cd $DEST_DIR
-wget $WGET_SDHASH
-tar -xzvf $SDHASH_DIR.tar.gz
-cd $SDHASH_DIR
-
-# Patch for 32bit systems
-PLATFORM=`getconf LONG_BIT`
-
-if [ $PLATFORM -eq 32 ];
-then
-    grep "D_M_IX86" Makefile
-    if [ $? -ne 0 ];
-    then
-        cp Makefile Makefile.original
-        sed 's@CFLAGS = @CFLAGS = -D_M_IX86 @g' -i Makefile
-    fi
-
-    grep "//local_cpuid" ./sdbf/sdbf_conf.cc
-    if [ $? -ne 0 ];
-    then
-        cp ./sdbf/sdbf_conf.cc ./sdbf/sdbf_conf.cc.original
-        sed 's@local_cpuid@//local_cpuid@g' -i ./sdbf/sdbf_conf.cc
-    fi
-fi
-
-# Patch for 64bit platforms (works well on 32bit platforms as well) to properly 
-# build of static version of sdhash-supplied boost library on
-FILE_SDHASH_MAKEFILE="Makefile"
-if [ `grep "link=static" $FILE_SDHASH_MAKEFILE | grep "fPIC" | wc -l` -eq 0 ];
-then
-    sed -i 's@b2 link=static@b2 link=static cxxflags=-fPIC cflags=-fPIC@g' $FILE_SDHASH_MAKEFILE
-fi
-
-make
-if [ $? -ne 0 ];
-then
-    echo "Error: build failed for $SDHASH_DIR"
-    exit 1
-fi
-
-################################################################################
-
+echo "Preparing and building PostgreSQL"
 cd $DEST_DIR
 wget $WGET_PSQL
 tar -xzvf $PSQL_DIR.tar.gz
@@ -123,6 +82,60 @@ make check
 
 ################################################################################
 
+echo "Preparing SDHASH_PSQL"
+cd $DEST_DIR/$PSQL_DIR/contrib
+git clone $GIT_SDHASH_PSQL
+cd $SDHASH_PSQL_DIR
+# Patch over version "sdhash-3.3" to have "sdbf(char *str)" constructor as well to read a formatted sdbf from a C-string
+# NOTE: remove this once the patch is integrated in new sdhash versions and the new versions are used herein
+cp -f sdbf_class.* $DEST_DIR/$SDHASH_DIR/sdbf/
+
+################################################################################
+
+echo "Preparing and building SDHASH"
+cd $DEST_DIR
+wget $WGET_SDHASH
+tar -xzvf $SDHASH_DIR.tar.gz
+cd $SDHASH_DIR
+
+# Patch for 32bit systems
+PLATFORM=`getconf LONG_BIT`
+
+if [ $PLATFORM -eq 32 ];
+then
+    grep "D_M_IX86" Makefile
+    if [ $? -ne 0 ];
+    then
+        cp Makefile Makefile.original
+        sed 's@CFLAGS = @CFLAGS = -D_M_IX86 @g' -i Makefile
+    fi
+
+    grep "//local_cpuid" ./sdbf/sdbf_conf.cc
+    if [ $? -ne 0 ];
+    then
+        cp ./sdbf/sdbf_conf.cc ./sdbf/sdbf_conf.cc.original
+        sed 's@local_cpuid@//local_cpuid@g' -i ./sdbf/sdbf_conf.cc
+    fi
+fi
+
+# Patch for 64bit platforms (works well on 32bit platforms as well) to properly 
+# build of static version of sdhash-supplied boost library on
+FILE_SDHASH_MAKEFILE="Makefile"
+if [ `grep "link=static" $FILE_SDHASH_MAKEFILE | grep "fPIC" | wc -l` -eq 0 ];
+then
+    sed -i 's@b2 link=static@b2 link=static cxxflags=-fPIC cflags=-fPIC@g' $FILE_SDHASH_MAKEFILE
+fi
+
+make
+if [ $? -ne 0 ];
+then
+    echo "Error: build failed for $SDHASH_DIR"
+    exit 1
+fi
+
+################################################################################
+
+echo "Preparing and building SSDEEP_PSQL"
 cd $DEST_DIR/$PSQL_DIR/contrib
 git clone $GIT_SSDEEP_PSQL
 cd $SSDEEP_PSQL_DIR
@@ -134,13 +147,17 @@ then
     exit 1
 fi
 
+################################################################################
+
+echo "Building SDHASH_PSQL"
 cd $DEST_DIR/$PSQL_DIR/contrib
-git clone $GIT_SDHASH_PSQL
 cd $SDHASH_PSQL_DIR
 ln -s $DEST_DIR/$SDHASH_DIR sdhash-dist
 ./build_sdhash_psql.sh
 
+################################################################################
 
+echo "Testing PostgreSQL plugins"
 cd $DEST_DIR/$PSQL_DIR/contrib
 
 # Patch $DEST_DIR/$PSQL_DIR/contrib/Makefile to contain fuzzy-hashing plugins:
@@ -172,6 +189,7 @@ make check-world
 
 ################################################################################
 
+echo "Installing PostgreSQL and PostgreSQL plugins"
 cd $DEST_DIR/$PSQL_DIR
 
 # This installs the PostreSQL

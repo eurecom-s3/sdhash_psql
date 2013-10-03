@@ -8,6 +8,7 @@
 // License  :   GPLv3
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <stdlib.h> 
 #include "postgres.h"
 #include "fmgr.h"
 #include "./utils/builtins.h"
@@ -95,7 +96,7 @@ Datum pg_sdhash_compare(PG_FUNCTION_ARGS) {
     }
     catch(int e)
     {
-        PG_RETURN_INT32(ERROR_INT32);
+        PG_RETURN_INT32(e);
     }
 }
 // 
@@ -106,6 +107,11 @@ PG_FUNCTION_INFO_V1(pg_sdhash_hash_compare);
 //Datum pg_sdhash_hash_compare(PG_FUNCTION_ARGS);
 
 Datum pg_sdhash_hash_compare(PG_FUNCTION_ARGS) {
+    char *str1 = NULL;
+    char *str2 = NULL;
+    sdbf *_sdbf1 = NULL;
+    sdbf *_sdbf2 = NULL;
+
     try
     {
         text *arg1 = PG_GETARG_TEXT_P(0);
@@ -113,52 +119,104 @@ Datum pg_sdhash_hash_compare(PG_FUNCTION_ARGS) {
         int arg_size1 = VARSIZE(arg1) - VARHDRSZ;
         int arg_size2 = VARSIZE(arg2) - VARHDRSZ;
         int32 score;
-        int pipe1[2];
-        int pipe2[2];
-        FILE *hash_fp1 = NULL;
-        FILE *hash_fp2 = NULL;
 
-        // http://stackoverflow.com/a/5848611
-        pipe(pipe1);
-        pipe(pipe2);
+        str1 = (char *) malloc(arg_size1 + 1);
+        memcpy(str1, (char *) VARDATA(arg1), arg_size1);
+        str1[arg_size1] = '\0';
 
-        hash_fp1 = fdopen(pipe1[0], "r");
-        hash_fp2 = fdopen(pipe2[0], "r");
+        str2 = (char *) malloc(arg_size2 + 1);
+        memcpy(str2, (char *) VARDATA(arg2), arg_size2);
+        str2[arg_size2] = '\0';
+        
+        _sdbf1 = new sdbf(str1);
+        _sdbf2 = new sdbf(str2);
 
-        write(pipe1[1], (char *) VARDATA(arg1), arg_size1);
-        write(pipe2[1], (char *) VARDATA(arg2), arg_size2);
+        score = (int32) _sdbf1->compare(_sdbf2, 0);
 
-        // This sends an EOF onto the FILE*
-        // http://stackoverflow.com/a/13521465
-        close(pipe1[1]);
-        close(pipe2[1]);
+        // Cleanup the memory
+        if (str1)
+        {
+            free(str1);
+            str1 = NULL;
+        }
 
-        // http://stackoverflow.com/q/16684950
-        //fprintf(hash_fp1, "%.*s\n", arg_size1, (char *) VARDATA(arg1) );
-        //fprintf(hash_fp2, "%.*s\n", arg_size2, (char *) VARDATA(arg2) );
+        if (str2)
+        {
+            free(str2);
+            str2 = NULL;
+        }
+        
+        if (_sdbf1)
+        {
+            delete _sdbf1;
+            _sdbf1 = NULL;
+        }
 
-        // NOTE: this is a wierdo interface. why there is no constructor from an "SDBF hash" ("sdbf:..."), but only for "SDBF hash" read from a FILE*?!
-        sdbf *hash_sdbf1 = new sdbf(hash_fp1);
-        sdbf *hash_sdbf2 = new sdbf(hash_fp2);
-
-        // Keep 0 in sync with sdhash.cc: sdbf_sys.sample_size
-        score = (int32) hash_sdbf1->compare(hash_sdbf2, 0);
-
-        delete hash_sdbf1;
-        delete hash_sdbf2;
-
-        fclose(hash_fp1);
-        fclose(hash_fp2);
+        if (_sdbf2)
+        {
+            delete _sdbf2;
+            _sdbf2 = NULL;
+        }
 
         PG_RETURN_INT32(score);
     }
     catch(exception& e)
     {
+        // Cleanup the memory
+        if (str1)
+        {
+            free(str1);
+            str1 = NULL;
+        }
+
+        if (str2)
+        {
+            free(str2);
+            str2 = NULL;
+        }
+
+        if (_sdbf1)
+        {
+            delete _sdbf1;
+            _sdbf1 = NULL;
+        }
+
+        if (_sdbf2)
+        {
+            delete _sdbf2;
+            _sdbf2 = NULL;
+        }
+
         PG_RETURN_INT32(ERROR_INT32);
     }
     catch(int e)
     {
-        PG_RETURN_INT32(ERROR_INT32);
+        // Cleanup the memory
+        if (str1)
+        {
+            free(str1);
+            str1 = NULL;
+        }
+
+        if (str2)
+        {
+            free(str2);
+            str2 = NULL;
+        }
+
+        if (_sdbf1)
+        {
+            delete _sdbf1;
+            _sdbf1 = NULL;
+        }
+
+        if (_sdbf2)
+        {
+            delete _sdbf2;
+            _sdbf2 = NULL;
+        }
+
+        PG_RETURN_INT32(e);
     }
 }
 // 
